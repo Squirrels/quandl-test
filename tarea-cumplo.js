@@ -42,38 +42,7 @@ if (Meteor.isServer) {
     //When the server starts, we load up the configuration from the file server/settings.json
     Meteor.call("loadServerSettings");
     //Now we check if there's a Database in our server with that name
-    if(Databases.find({code: databaseCode}).count() == 0){
-      //There are none, we need to add it to our local database and then read the CSV with the datasets for it
-      //First we get the data from the Quandl API
-      var databaseAPIResponse = Meteor.call("getDatabaseInformationJson", databaseCode);
-      //If we get a null, there was an error connecting to the api: either this database code does not exists or the API is down
-      if(databaseAPIResponse){
-        //The connection was successful and we continue as usual
-        //Extract the data from the reponse
-        var databaseData = databaseAPIResponse.data.database;
-        //And now we can get the values from this data
-        //With this, we add it to the database
-        Databases.insert({
-          name: databaseData.name,
-          code: databaseCode,
-          description: databaseData.description,
-          image: databaseData.image,
-          datasets: databaseData.datasets_count,
-          createdAt: new Date(),
-          updatedAt: new Date()
-        });
-        //Log it as well
-        console.log("Database " + databaseCode + " added.");
-        console.log("Database data: "+databaseData.name);
-      }
-      else{
-        console.log("Error:  "+ databaseAPIResponse);
-      }
-    }
-    else{ //There's already a database with that name in our 
-      console.log("Database already added.");
-    }
-
+    
 
     //After checking the database, time to check the dataset
     //We start by checking if the number stored matches the one we got from the server
@@ -126,18 +95,13 @@ Meteor.methods({
 
   },
   addExample: function () {
-
-    /*if(Datasets.find({$and: [{ database: "WOLO" },{ code: 123 }]}).count() == 0){       
-        Datasets.insert({
-            database: "WOLO",
-            name: ":O",
-            code: 123,
-            createdAt: new Date(),
-            lastUpdate: new Date()
-        });*/
-      Meteor.call("updateDataset", "WOLO", 123);
-      console.log("Updated.");
-      console.log(Datasets.find().count());
+      //var result = Meteor.call("httpRequest", Meteor.call("parseAPIURL", datasetMetadataAPIUrl, "WIKI", "AAPL"));
+      //Datasets.insert(result.data.dataset);
+      //Meteor.call("updateDataset", "WOLO", 123);
+      //console.log("Added.");
+      //console.log(Datasets.find().count());
+      //Meteor.call("addDatasetData", "WIKI", "AAPL");
+      console.log(Meteor.call("getDatasetId", "WIKI", "AAPL"));
     //}
     //else{
      // console.log("Duplicated");
@@ -161,6 +125,46 @@ Meteor.methods({
       return null;
     }
     
+  },
+  downloadDatabaseInformation: function(databaseCode){
+      
+      var database = Meteor.call("getDatabase", databaseCode);
+      if(database == undefined){
+
+      }
+      //There are none, we need to add it to our local database and then read the CSV with the datasets for it
+      //First we get the data from the Quandl API
+      var databaseAPIResponse = Meteor.call("getDatabaseInformationJson", databaseCode);
+      //If we get a null, there was an error connecting to the api: either this database code does not exists or the API is down
+      if(databaseAPIResponse){
+        //The connection was successful and we continue as usual
+        //Extract the data from the reponse
+        var databaseData = databaseAPIResponse.data.database;
+        //And now we can get the values from this data
+        //With this, we add it to the database
+        Databases.insert({
+          name: databaseData.name,
+          database_code: databaseCode,
+          description: databaseData.description,
+          image: databaseData.image,
+          datasets_count: databaseData.datasets_count,
+          premium: databaseData.premium,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        });
+        //Log it as well
+        console.log("Database " + databaseCode + " added.");
+        console.log("Database data: "+databaseData.name);
+      }
+      else{
+        console.log("Error:  "+ databaseAPIResponse);
+      }
+    }
+    else{ //There's already a database with that name in our 
+      console.log("Database already added.");
+    }
+
+
   },
   /**
    * Gets the information about a database from the Quandl API, given a specific database code.
@@ -231,13 +235,17 @@ Meteor.methods({
       });
   },
   getDatasetInformation: function(databaseCode, datasetCode){
-      //First check if there's such dataset  
-      var dataset = Datasets.findOne( {$and: [{ databaseCode: databaseCode },{ code: datasetCode }]} );
-      if(dataset != undefined){
+      //First check if there's such dataset  (and that the information hasn't been downloaded before)
+      var dataset = Meteor.call("getDataset", databaseCode, datasetCode);
+      if(dataset != undefined && dataset.description != undefined){
         //Connect to the API using the given values
         var datasetInfo = Meteor.call("httpRequest", Meteor.call("parseAPIURL", datasetMetadataAPIUrl, databaseCode, datasetCode));
+        //Check if the API returned information
         if(datasetInfo){
-            
+            //Add it to the dataset entry
+          var datasetData = datasetInfo.data.dataset;
+          //Update it using the data we just downloaded
+          Datasets.update(dataset._id, { $set: [datasetData]});
         }
         else{
           return null;
@@ -249,12 +257,12 @@ Meteor.methods({
       }
   },
   updateDataset: function(databaseCode, datasetCode){
-    var dataset= Datasets.findOne({code: datasetCode});
+    var dataset= Meteor.call("getDataset", databaseCode, datasetCode);
     if(dataset.description != undefined){
       console.log("Description already present");
     }
     else{
-      Datasets.update(dataset._id, { $set: { description: "What!"} });
+      //We connect to the API and get the info
       console.log("Description added.");
     }
     
@@ -266,14 +274,31 @@ Meteor.methods({
    */
   addDatasetData: function(databaseCode, datasetCode){
 
+      //Check that both database and dataset exist
+      var datasetId = Meteor.call("getDataset", databaseCode, datasetCode)._id;
       //Connect to the api using the API key
-      var datasetData = Meteor.call("httpRequest", Meteor.call("parseAPIURL", datasetDataAPIUrl, databaseCode, datasetCode)+ "?start_date=2015-05-26&end_date=2015-05-27");
+      var datasetData = Meteor.call("httpRequest", Meteor.call("parseAPIURL", datasetDataAPIUrl, databaseCode, datasetCode)+ "");
       //It's a json, so we can iterate through it normally
       //But first check if there were no errors
       if(datasetData){
-        //Get the columns
-        console.log(datasetData.data.dataset_data.column_names);
-        console.log(datasetData.data.dataset_data.data);
+        //Get the data
+        var dataValues = datasetData.data.dataset_data.data;
+        var entriesAdded = 0;
+        for(var i=0; i<dataValues.length;i++){
+          //Check that it's not repeated
+          if(Data.findOne( {$and: [{ datasetId: datasetId },{ values: dataValues[i] }]} ) == undefined){
+            Data.insert({
+              datasetId: datasetId,
+              values: dataValues[i]
+            });
+            entriesAdded++;
+          }
+          else{
+            //console.log("Entry already exists");
+          }
+            
+        }
+        console.log("Entries added: "+entriesAdded);
       }
   },
  /**
@@ -291,6 +316,12 @@ Meteor.methods({
     result = result.replace(":datasetCode",datasetCode);
     //Now we return it
     return result;
+  },
+  getDataset: function(databaseCode, datasetCode){
+    return Datasets.findOne( {$and: [{ database_code: databaseCode },{ dataset_code: datasetCode }]} ).;
+  },
+  getDatabase: function(databaseCode){
+     return Datasets.findOne({database_code: datasetCode});
   }
   //Download profile image
 
