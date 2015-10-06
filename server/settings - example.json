@@ -1,0 +1,6 @@
+{
+  "quandlAPIKey": "API KEY GOES HERE",
+  "rateLimit10Minutes": 2000,
+  "rateLimitDay": 50000,
+  "databaseCode": "WIKI"
+}
