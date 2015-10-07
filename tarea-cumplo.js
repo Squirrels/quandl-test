@@ -10,37 +10,118 @@ Datasets = new Mongo.Collection("datasets");
 //The data associated with a dataset
 Data = new Mongo.Collection("data");
 
-var dataShowCode = "AAPL";
+
 if (Meteor.isClient) {
   //Subscribe to be able to display the information
   //Meteor.subscribe("databases");
-  //Meteor.subscribe("datasets");
+  Meteor.subscribe("datasets");
   //Meteor.subscribe("data");
+  Session.set("datasetCode", "");
+
+
+  Session.set("datasetPageOffset", 1);
+  Meteor.call(
+    'getDatabaseCode',
+    function(error, result){
+        if(error){
+            console.log(error);
+        } else {
+            Session.set('databaseCode', result);
+        }
+    }
+  );
 
   //Helpers
   //
   Template.body.helpers({
     data: function () {
-      return Data.find({}, {limit: 10});
+      //Get the id of the dataset
+      //var dataset = Meteor.call("getDataset", Session.get("databaseCode"), Session.get("datasetCode"));
+      var dataset = Datasets.find({dataset_code: Session.get("datasetCode")}).fetch()[0];
+      if(dataset != undefined && dataset._id != undefined){
+        //console.log("Gettin data for "+dataset._id);
+        return Data.find({datasetId: dataset._id}, {skip: 10*Session.get("datasetPageOffset") ,limit: 10});
+      }
+      else{
+        console.log("No data :,(");
+        return null;
+      }
+      
     },
-    tableNames: function (){
-      console.log("Displaying data for: "+dataShowCode);
-      return Datasets.find({dataset_code: dataShowCode}, {limit:1});
+    datasetInfo: function(){
+      var dataset = Datasets.find({dataset_code: Session.get("datasetCode")}).fetch()[0];
+      if(dataset != undefined){
+        return dataset;
+      }
+      else{
+        return null;
+      }
+    },
+    searchResult: function(){
+      if(Session.get("datasetCode") != undefined && Session.get("datasetCode") != ""){
+        var dataset = Datasets.find({dataset_code: Session.get("datasetCode")});
+        if(dataset.count() != 0){
+          return "Found dataset with code " + Session.get("datasetCode");
+        }
+        else{
+          return "Dataset "+Session.get("datasetCode")+" not found!";
+        }
+      }
+      else{
+        return "";
+      }
+      
+    },
+    databaseName: function(){
+      return Session.get("databaseCode");
     }
+    //,
+    //tableNames: function (){
+     // console.log("Displaying data for: "+dataShowCode);
+     // return Datasets.find({dataset_code: dataShowCode}, {limit:1});
+    //}
   });
 
   //Events
   Template.body.events({
     "click .example": function () {
       // Set the checked property to the opposite of its current value
-      //Meteor.call("addExample");
+      Meteor.call("addExample");
       //dataShowCode = "AAPL2";
-      console.log("Changing dataShowCode to AAPL2");
-      Meteor.call("changeDatabase");
+     // console.log("Changing dataShowCode to AAPL2");
     },
+    "submit .dataset-name": function (event) {
+      // Prevent default browser form submit
+      event.preventDefault();
+      
+      //Set the session variable to the input
+      Session.set("datasetCode", event.target.text.value.toUpperCase());
+
+      // Clear form
+      event.target.text.value = "";
+    },
+    "click #data-forward": function(event){
+      console.log("Forward!");
+      Session.set("datasetPageOffset", Session.get("datasetPageOffset")+1);
+    },
+    "click #data-back": function(event){
+      if(Session.get("datasetPageOffset") > 0){
+         console.log("Backwards!");
+         Session.set("datasetPageOffset", Session.get("datasetPageOffset")-1);
+      }
+     
+    }
   });
 
-  ///
+  Template.dataTableNames.helpers({
+    column_names: function() {
+      var result = Datasets.find({dataset_code: Session.get("datasetCode")}, {limit:1})
+     return result;
+    }
+  });
+
+  //
+
 }
 
 
@@ -121,8 +202,8 @@ Meteor.methods({
       //Meteor.call("updateDataset", "WOLO", 123);
       //console.log("Added.");
       //console.log(Datasets.find().count());
-      //Meteor.call("addDatasetData", "WIKI", "AAPL");
-      console.log(Meteor.call("getDatasetId", "WIKI", "AAPL"));
+      Meteor.call("addDatasetData", "WIKI", "AAPL");
+      //console.log(Meteor.call("getDatasetId", "WIKI", "AAPL"));
     //}
     //else{
      // console.log("Duplicated");
@@ -145,7 +226,6 @@ Meteor.methods({
       console.log("Error: "+error);
       return null;
     }
-    
   },
   downloadDatabaseInformation: function(databaseCode){
       
@@ -304,11 +384,16 @@ Meteor.methods({
         //Get the data
         var dataValues = datasetData.data.dataset_data.data;
         var entriesAdded = 0;
+        var dateParts;
         for(var i=0; i<dataValues.length;i++){
           //Check that it's not repeated
           if(Data.findOne( {$and: [{ datasetId: datasetId },{ values: dataValues[i] }]} ) == undefined){
+            //Separate the date parts
+            dateParts = dataValues[i][0].split("-");
+            //Now add it
             Data.insert({
               datasetId: datasetId,
+              date: new Date(dateParts[0], dateParts[1], dateParts[2]),
               values: dataValues[i]
             });
             entriesAdded++;
@@ -343,10 +428,8 @@ Meteor.methods({
   getDatabase: function(databaseCode){
      return Datasets.findOne({database_code: datasetCode});
   },
-  //Download profile image
-  changeDatabase: function(){
-    dataShowCode = "AAPL2";
-    console.log("Datashow: "+ dataShowCode);
+  getDatabaseCode: function(){
+    return databaseCode;
   }
 
 });

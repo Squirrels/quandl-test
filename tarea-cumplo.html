@@ -3,27 +3,52 @@
 </head>
 
 <body>
-  <h1>Displaying data:</h1>
-  <input type="button" name="example" class="example" value="Type to add new tasks" />
+  <h1>Using database: {{databaseName}}</h1>
+  <hr>
+  <h1>Enter dataset name:</h1>
+  	<form class="dataset-name">
+	    <input id="dataset-input" type="text" name="text" placeholder="Search for dataset" />
+	</form>
+	{{searchResult}}
+  <hr>
+  <h1>Displaying data for :</h1>
   <br />
-  <table style="width:100%">
-  	{{#each tableNames}}
-   		 {{> dataTableNames}}
-  	{{/each}}
+  {{#if datasetInfo}}
+	  Name: {{datasetInfo.name}}
+	  <br />
+	  Desc: {{datasetInfo.description}}
+  {{/if}}
+  <br />
+  <!-- <input type="button" name="example" class="example" value="Type to add new tasks" list="datalist1"/> -->
+  <br />
+  {{#if data}}
+  <table style="width:100%" id="dataTable">
+  <thead>
+  {{> dataTableNames}}
+  </thead>
+  <tbody>
   	{{#each data}}
    		 {{> dataTableInfo}}
   	{{/each}}
-  </table>
+  </tbody>
+  	<!-- Buttons -->
+  	<form class="data-button">
+	    <input id="data-back" type="button" value="<" />
+	    <input id="data-forward" type="button" value=">" />
+	</form>
+	</table>
+   {{/if}}
+ 
 </body>
-
-
-
 
 <template name="dataTableNames">
 	<tr>
 	{{#each column_names}}
+		{{#each this.column_names}}
     	 <th>{{this}}</th>
+    	 {{/each}}
    	{{/each}}
+
    	</tr>
 </template>
 
@@ -34,4 +59,6 @@
     	 <th>{{this}}</th>
    	{{/each}}
    	</tr>
+   
+
 </template>
