@@ -3,13 +3,32 @@
 </head>
 
 <body>
-  <h1>Using database: {{databaseName}}</h1>
+  <h1>Using database: {{databaseInfo.code}}</h1>
+  <div>
+    {{databaseInfo.name}}
+    <br /> 
+    {{databaseInfo.description}}
+    <br />
+    <img src="{{databaseInfo.image}}">
+    <br />
+    {{databaseInfo.datasets}}
+  </div>
   <hr>
   <h1>Enter dataset name:</h1>
   	<form class="dataset-name">
 	    <input id="dataset-input" type="text" name="text" placeholder="Search for dataset" />
 	</form>
 	{{searchResult}}
+
+  <h2>Select dataset</h2>
+  {{#if datasetList}}
+    {{#each datasetList}}
+       {{> datasetLink}}
+    {{/each}}
+     
+  {{/if}}
+    <input id="dataset-back" type="button" value="<" />
+      <input id="dataset-forward" type="button" value=">" />
   <hr>
   <h1>Displaying data for :</h1>
   <br />
@@ -32,13 +51,13 @@
   	{{/each}}
   </tbody>
   	<!-- Buttons -->
-  	<form class="data-button">
-	    <input id="data-back" type="button" value="<" />
-	    <input id="data-forward" type="button" value=">" />
-	</form>
+  	
 	</table>
    {{/if}}
- 
+ <form class="data-button">
+      <input id="data-back" type="button" value="<" />
+      <input id="data-forward" type="button" value=">" />
+  </form>
 </body>
 
 <template name="dataTableNames">
@@ -61,4 +80,9 @@
    	</tr>
    
 
+</template>
+
+
+<template name="datasetLink">
+<a class="datasetLink" href="{{this}}" >{{this}}</a>
 </template>
