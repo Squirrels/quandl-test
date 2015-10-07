@@ -332,25 +332,58 @@ Meteor.methods({
   getDatabaseCode: function(){
     return databaseCode;
   },
-  getDatasetList: function(){
-    var result = Datasets.find({}, {skip: 0 ,limit: 10});
-    console.log("Calling in server "+result);
-    var result2 = [];
-    result.forEach(function (row) {
-            result2.push(row.dataset_code);
+  getDatasetList: function(offset){
+    var datasets = Datasets.find({}, {skip: 10*offset ,limit: 10});
+    var datasetsAsArray = [];
+    datasets.forEach(function (row) {
+            datasetsAsArray.push(row.dataset_code);
         }); 
-    console.log("Calling in server "+result2);
-    return result2;
-    //return "Chicken!";
+    return datasetsAsArray;
   },
-  getDisplayData: function(databaseCode, datasetCode){
+  /**
+   * Returns the data to be displayed, based on the current database, dataset and the "page", which is calculated through the offset.
+   * @param  {Stting} databaseCode Code of the currently working database.
+   * @param  {String} datasetCode  Code of the currently working dataset.
+   * @param  {Number} offset       The number that will be multiplied by the limiter when displaying the data.
+   * @return {Array}               The data to be displayed as an array.
+   */
+  getDisplayData: function(databaseCode, datasetCode, offset){
+    //We get the appropiate dataset id from the databasecode and the datasetcode
     var datasetId = Meteor.call("getDataset", databaseCode, datasetCode)._id;
-    var result = Data.find({datasetId: datasetId}, {skip: 10 ,limit: 10})
-    var result2 = [];
-    result.forEach(function (row) {
-            result2.push(row);
+    //Then we get the data to be converted, limited by the offset and the display limit
+    var data = Data.find({datasetId: datasetId}, {skip: 10*offset ,limit: 10})
+    //And finally we transform it into an array so that the template can work with it
+    var dataAsArray = [];
+    data.forEach(function (row) {
+            dataAsArray.push(row);
     }); 
-    return result2;
+    return dataAsArray;
+  },
+  /**
+   * Returns the maximun number of pages that can be reched in the pagination of the dataset list
+   * @return {Number} Max number of pages we can reach with the pagination.
+   */
+  getDatassetListPaginationUpperLimit: function(){
+      //First get the numnber of datasets.
+      var numberOfDatasets = Datasets.find({}).count();
+      //Then return it (rounded up) after dividing it by the limiter.
+      //The one we're substracting is because the offset starts at 0.
+      return Math.ceil(numberOfDatasets/10)-1;
+  },
+  /**
+   * Returns the maximum number of pages that can be reached in the pagination of the display data.
+   * @param  {String} databaseCode The databases's code.
+   * @param  {String} datasetCode  The dataset's code.
+   * @return {Number}              The maximum number of pages for the display data.
+   */
+  getDisplayDataPaginationUpperLimit: function(databaseCode, datasetCode){
+      //First we get the dataset id from the databaseCode and the datasetCode
+      var datasetId = Meteor.call("getDataset", databaseCode, datasetCode)._id;
+      //Then we get all the data entries that have that id as datasetid, and we count it
+      var numberOfDataEntries = Data.find({datasetId: datasetId}).count();
+      //Then we return the result of rounding it up after diving it by the limiter
+      //We substract one because the offset starts at 0.
+      return Math.ceil(numberOfDataEntries/10)-1;
   }
 
 });
