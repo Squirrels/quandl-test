@@ -3,6 +3,35 @@
 </head>
 
 <body>
-  <h1>Welcome to Meteor!</h1>
+  <h1>Displaying data:</h1>
   <input type="button" name="example" class="example" value="Type to add new tasks" />
+  <br />
+  <table style="width:100%">
+  	{{#each tableNames}}
+   		 {{> dataTableNames}}
+  	{{/each}}
+  	{{#each data}}
+   		 {{> dataTableInfo}}
+  	{{/each}}
+  </table>
 </body>
+
+
+
+
+<template name="dataTableNames">
+	<tr>
+	{{#each column_names}}
+    	 <th>{{this}}</th>
+   	{{/each}}
+   	</tr>
+</template>
+
+
+<template name="dataTableInfo">
+	<tr>
+	{{#each values}}
+    	 <th>{{this}}</th>
+   	{{/each}}
+   	</tr>
+</template>

@@ -10,12 +10,33 @@ Datasets = new Mongo.Collection("datasets");
 //The data associated with a dataset
 Data = new Mongo.Collection("data");
 
-
+var dataShowCode = "AAPL";
 if (Meteor.isClient) {
+  //Subscribe to be able to display the information
+  //Meteor.subscribe("databases");
+  //Meteor.subscribe("datasets");
+  //Meteor.subscribe("data");
+
+  //Helpers
+  //
+  Template.body.helpers({
+    data: function () {
+      return Data.find({}, {limit: 10});
+    },
+    tableNames: function (){
+      console.log("Displaying data for: "+dataShowCode);
+      return Datasets.find({dataset_code: dataShowCode}, {limit:1});
+    }
+  });
+
+  //Events
   Template.body.events({
     "click .example": function () {
       // Set the checked property to the opposite of its current value
-      Meteor.call("addExample");
+      //Meteor.call("addExample");
+      //dataShowCode = "AAPL2";
+      console.log("Changing dataShowCode to AAPL2");
+      Meteor.call("changeDatabase");
     },
   });
 
@@ -128,10 +149,9 @@ Meteor.methods({
   },
   downloadDatabaseInformation: function(databaseCode){
       
-      var database = Meteor.call("getDatabase", databaseCode);
-      if(database == undefined){
+    var database = Meteor.call("getDatabase", databaseCode);
+    if(database == undefined){
 
-      }
       //There are none, we need to add it to our local database and then read the CSV with the datasets for it
       //First we get the data from the Quandl API
       var databaseAPIResponse = Meteor.call("getDatabaseInformationJson", databaseCode);
@@ -318,12 +338,15 @@ Meteor.methods({
     return result;
   },
   getDataset: function(databaseCode, datasetCode){
-    return Datasets.findOne( {$and: [{ database_code: databaseCode },{ dataset_code: datasetCode }]} ).;
+    return Datasets.findOne( {$and: [{ database_code: databaseCode },{ dataset_code: datasetCode }]} );
   },
   getDatabase: function(databaseCode){
      return Datasets.findOne({database_code: datasetCode});
-  }
+  },
   //Download profile image
-
+  changeDatabase: function(){
+    dataShowCode = "AAPL2";
+    console.log("Datashow: "+ dataShowCode);
+  }
 
 });
