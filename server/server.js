@@ -325,7 +325,7 @@ Meteor.methods({
    */
   getDatasetList: function(offset){
     //Find the group of datasets we will use.
-    var datasets = Datasets.find({database_code: databaseCode}, {skip: 10*offset ,limit: 10});
+    var datasets = Datasets.find({database_code: databaseCode}, {sort: {dataset_code: 1}, skip: 10*offset ,limit: 10});
     //Put them in an array
     var datasetsAsArray = [];
     datasets.forEach(function (row) {

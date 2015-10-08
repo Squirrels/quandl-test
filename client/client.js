@@ -10,7 +10,9 @@
   Session.set("datasetPageOffset", 0);
   //and the display data
   Session.set("displayDataPageOffset", 0);
-  //On startup, we get the database code from the server
+
+Meteor.startup(function () {
+    //On startup, we get the database code from the server
   Meteor.call(
     'getDatabaseCode',
     function(error, result){
@@ -19,46 +21,45 @@
         } else {
             //And set it to the session variable
             Session.set('databaseCode', result);
+            //For the information of the database
+              Meteor.call("getDatabase",Session.get('databaseCode'), function(err, response) {
+                           Session.set('databaseInfo', response);
+                        });
         }
     }
   );
-//We call the getDatasetList here to get the array of datasets to be displayed. We store this data in the session variable datasetList
-Meteor.call("getDatasetList", Session.get('databaseCode'), Session.get('datasetCode'), Session.get("datasetPageOffset"), function(err, response) {
-             Session.set('datasetList', response);
-          });
-//For the pagination of the dataset list.
-Meteor.call("getDatassetListPaginationUpperLimit", function(err, response) {
-             Session.set('datasetListMaxPages', response);
-          });
+  //We call the getDatasetList here to get the array of datasets to be displayed. We store this data in the session variable datasetList
+  Meteor.call("getDatasetList", Session.get('databaseCode'), Session.get('datasetCode'), Session.get("datasetPageOffset"), function(err, response) {
+               Session.set('datasetList', response);
+            });
+  //For the pagination of the dataset list.
+  Meteor.call("getDatassetListPaginationUpperLimit", function(err, response) {
+               Session.set('datasetListMaxPages', response);
+            });
 
+  
+});
 //Helpers
 Template.body.helpers({
     data: function () {
-      //Get the id of the dataset
-      //var dataset = Datasets.find({dataset_code: Session.get("datasetCode")}).fetch()[0];
-      console.log("Getting data for "+Session.get("databaseCode") +" "+ Session.get("datasetCode") );
-      var dataset = Datasets.findOne( {$and: [{ database_code: Session.get("databaseCode") },{ dataset_code: Session.get("datasetCode") }]} );
-      if(dataset != undefined && dataset._id != undefined){
-        //Return the data to be displayed
-        console.log("Displaying data");
+      //Check if the session data is empty
+      if(Session.get("displayData") != undefined){
+        //If not, return it
         return Session.get("displayData");
       }
       else{
-        //Dataset does not exist
-        return null;
+        return null
       }
       
     },
     datasetInfo: function(){
-      //Gets the information from the selected dataset
-      //var dataset = Datasets.findOne({dataset_code: Session.get("datasetCode")});
-      var dataset = Datasets.find({$and: [{database_code: Session.get("databaseCode")},{dataset_code: Session.get("datasetCode")}]} ).fetch()[0];//  .findOne( {$and: [{ database_code: Session.get("databaseCode") },{ dataset_code: Session.get("datasetCode") }]} )
-      //Check that it's not empty
-      if(dataset != undefined){
-        return dataset;
+      //Check if the session data is empty
+      if(Session.get("datasetInfo") != undefined){
+        console.log(Session.get("datasetInfo").column_names);
+        return Session.get("datasetInfo");
       }
       else{
-        return null;
+        return null
       }
     },
     searchResult: function(){
@@ -66,21 +67,11 @@ Template.body.helpers({
       //First check if the session variables are not empty.
       if(Session.get("datasetCode") != undefined && Session.get("datasetCode") != ""){
         //Now look for a dataset with that code
-        var dataset = Datasets.findOne( {$and: [{ database_code: Session.get("databaseCode") },{ dataset_code: Session.get("datasetCode") }]} );
-        if(dataset != undefined){
-          //There is! Do we need to download the data?
-          Meteor.call("getDatasetInformation", dataset, Session.get("databaseCode"), Session.get("datasetCode"));
-          return "Dataset " + Session.get("datasetCode")+" selected.";
-        }
-        else{
-          return "Dataset "+Session.get("datasetCode")+" not found!";
-        }
       }
       else{
         //If nothing has been set, display no message
         return "";
-      }
-      
+      }      
     },
     databaseName: function(){
       //Sends the database code to the template
@@ -88,7 +79,7 @@ Template.body.helpers({
     },
     databaseInfo: function(){
       //Sends the database information to the template
-      return Databases.findOne({database_code: Session.get("databaseCode")});
+      return Session.get("databaseInfo")
     },
     datasetList: function(){
       //Sends the list of the datasets to the template
@@ -165,24 +156,16 @@ Template.body.helpers({
       }
     }
   });
- //Helpers
-  Template.dataTableNames.helpers({
-    /**
-     * Gets the column names from the dataset we're using.
-     * This is used in the template.
-     * @return {Array} The name of the columns for the data table.
-     */
-    column_names: function() {
-      var result = Datasets.find({dataset_code: Session.get("datasetCode")}, {limit:1})
-     return result;
-    }
-  });
 
   //
 /**
   * Method called to set the currently working dataset. It loads the data to be displayed and gets the maximum nunber of pages the pagination can reach.
 */
 function setWorkingDataset(){
+      //Set the dataset's info
+      Meteor.call("getDataset", Session.get('databaseCode'), Session.get('datasetCode'), function(err, response) {
+           Session.set('datasetInfo', response);
+      });
       //Set the data to be displayed
       Meteor.call("getDisplayData", Session.get('databaseCode'), Session.get('datasetCode'), Session.get("displayDataPageOffset"), function(err, response) {
            Session.set('displayData', response);

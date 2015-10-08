@@ -27,7 +27,7 @@
     <hr />
   <!-- Dataset list -->
     <div id="dataset-list">
-        <h2>Select dataset</h2>
+        <h2>Select dataset:</h2>
       {{#if datasetList}}
         {{#each datasetList}}
            {{> datasetLink}}
@@ -55,32 +55,25 @@
   {{/if}}
   <br />
   {{#if data}}
-  <table style="width:80%" id="dataTable" class="table table-striped">
+  <center><table style="width:80%" id="dataTable" class="table table-striped">
   <thead>
-  {{> dataTableNames}}
+    {{#each datasetInfo.column_names}}
+        <th>{{this}}</th>
+    {{/each}}
   </thead>
   <tbody>
   	{{#each data}}
    		 {{> dataTableInfo}}
   	{{/each}}
   </tbody>
-  	<!-- Buttons -->
+  	<!-- Buttons --><center>
   	<input id="data-back" type="button" value="<" class="btn btn-primary" />
     <input id="data-forward" type="button" value=">" class="btn btn-primary" />
+     </center>
 	</table>
+  </center>
    {{/if}}
 </body>
-
-<template name="dataTableNames">
-	<tr>
-	{{#each column_names}}
-		{{#each this.column_names}}
-    	 <th>{{this}}</th>
-    	 {{/each}}
-   	{{/each}}
-
-   	</tr>
-</template>
 
 
 <template name="dataTableInfo">
