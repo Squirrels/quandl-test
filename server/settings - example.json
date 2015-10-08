@@ -2,5 +2,9 @@
   "quandlAPIKey": "API KEY GOES HERE",
   "rateLimit10Minutes": 2000,
   "rateLimitDay": 50000,
-  "databaseCode": "WIKI"
+  "databaseCode": "WIKI",
+  "databaseCSVFile" : "WIKI-datasets-codes.csv",
+  "databaseAPIUrl": "https://www.quandl.com/api/v3/databases/:databaseCode.json",
+  "datasetMetadataAPIUrl": "https://www.quandl.com/api/v3/datasets/:databaseCode/:datasetCode/metadata.json",
+  "datasetDataAPIUrl": "https://www.quandl.com/api/v3/datasets/:databaseCode/:datasetCode/data.json"
 }

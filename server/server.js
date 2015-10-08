@@ -211,10 +211,11 @@ Meteor.methods({
         //The counters of datasets read and added.
         var totalRead = 0;
         var totalAdded = 0;
-
-        var limiter = 30;
-        //for(var i=0; i<allTextLines.length; i++){
-        for(var i=10; i<limiter; i++){
+        //Read every line of the file
+        //Used for testing the load of data into the database
+        //var limiter = 30;
+        //for(var i=10; i<limiter; i++){
+        for(var i=0; i<allTextLines.length; i++){
           //We use the greedy operator to split it up to the first , (since the name of the datasets usually have commas too).
           lineSubElements = allTextLines[i].split(/,(.+)?/);
           //Now we have in [0] = DATABASE NAME/DATASET NAME, let's split that by the /
