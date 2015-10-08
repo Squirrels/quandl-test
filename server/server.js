@@ -14,25 +14,24 @@ Meteor.startup(function () {
     //When the server starts, we load up the configuration from the file server/settings.json
     Meteor.call("loadServerSettings");
     //Now we check if there's a Database in our server with that name
-    
-
+    if(Databases.findOne({database_code: databaseCode}) == undefined){
+      console.log("Downloading database "+databaseCode);
+      Meteor.call("downloadDatabaseInformation", databaseCode);
+    }
     //After checking the database, time to check the dataset
     //We start by checking if the number stored matches the one we got from the server
-    if(Datasets.find({database: databaseCode}).count() != Databases.findOne({code: databaseCode}).datasets){
+    //Note that we're adding a -1 here because the database we're using has an error.
+    if(Datasets.find({database_code: databaseCode}).count()-1 != Databases.findOne({database_code: databaseCode}).datasets_count){
        //We need to download and process the CSV
        //To do this we simply call the addDatasets method
        Meteor.call("addDatasets", databaseCode);
-       //Meteor.call("getDatasetInformation", databaseCode, "ZBH");
-
     }
-
-    //Finally, get the dataset's data
-    //Meteor.call("addDatasetData", "WIKI", "AAPL");
-
+    else{
+      console.log("Database's dataset list downloaded already");
+    }
 });
 
-
-
+//Functions
     Meteor.methods({
         getDatasetInformation: function(dataset,databaseCode, datasetCode){
         //First check if there's such dataset  (and that the information hasn't been downloaded before)
@@ -49,7 +48,6 @@ Meteor.startup(function () {
                 //Add it to the dataset entry
               var datasetData = datasetInfo.data.dataset;
               //Update it using the data we just downloaded
-              //console.log(dataset._id);
               Datasets.update(dataset._id, { $set: datasetData});
               
               
@@ -60,7 +58,7 @@ Meteor.startup(function () {
             }
           }
           else{
-            console.log("Dataset "+datasetCode+"'s code has already been downloaded.");
+            console.log("Dataset "+datasetCode+"'s information has already been downloaded.");
           }
           //Now we check if we also need to download the data
           //We do this by checking if the data for this dataset is 0
@@ -71,7 +69,7 @@ Meteor.startup(function () {
           }
           else{
               //Dataset already has the data
-              console.log("-Dataset's data already downloaded-");
+              console.log("-Dataset's data has already been downloaded-");
           }
         }
         else{
@@ -116,19 +114,6 @@ Meteor.methods({
     //Everything was loaded correctly
     console.log("- Server's settings loaded correctly - ");
 
-  },
-  addExample: function () {
-      //var result = Meteor.call("httpRequest", Meteor.call("parseAPIURL", datasetMetadataAPIUrl, "WIKI", "AAPL"));
-      //Datasets.insert(result.data.dataset);
-      //Meteor.call("updateDataset", "WOLO", 123);
-      //console.log("Added.");
-      //console.log(Datasets.find().count());
-      Meteor.call("addDatasetData", "WIKI", "AAPL");
-      //console.log(Meteor.call("getDatasetId", "WIKI", "AAPL"));
-    //}
-    //else{
-     // console.log("Duplicated");
-    //}    
   },
   //Quandl API call methods
 
@@ -193,7 +178,7 @@ Meteor.methods({
    * @return {JSON}                The object that contains the result of the query.
    */
   getDatabaseInformationJson: function(databaseCode){
-    return Meteor.call("httpRequest", Meteor.call("parseAPIURL", databaseAPIUrl, databaseCode, datasetCode));
+    return Meteor.call("httpRequest", Meteor.call("parseAPIURL", databaseAPIUrl, databaseCode, ""));
   },
   /**
    * Returns the .csv file given in settings.json.
@@ -255,19 +240,6 @@ Meteor.methods({
         return totalAdded;
       });
   },
-  /*updateDataset: function(databaseCode, datasetCode){
-    var dataset= Meteor.call("getDataset", databaseCode, datasetCode);
-    if(dataset.description != undefined){
-      console.log("Dataset information has already been downloaded");
-    }
-    else{
-      //We connect to the API and get the info
-      console.log("Dataset information needs to be downloaded:");
-      Meteor.call("getDatasetInformation", databaseCode, datasetCode);
-      console.log("Description added.");
-    }
-    
-  },*/
   /**
    * Connects to the Quandl API and downloads the data for a given dataset. It then adds that to the local database.
    * @param  {String} databaseCode The database that contains the dataset's code.
@@ -300,7 +272,7 @@ Meteor.methods({
             entriesAdded++;
           }
           else{
-            //console.log("Entry already exists");
+            //Entry already exists
           }
             
         }
@@ -315,7 +287,6 @@ Meteor.methods({
   * @return {String}              The url with the correct data.
   */
   parseAPIURL: function(url, databaseCode, datasetCode){
-    //console.log(url);
     //First we replace the database code
     var result = url.replace(":databaseCode",databaseCode.toUpperCase());
     //Then the dataset code
@@ -323,17 +294,39 @@ Meteor.methods({
     //Now we return it
     return result;
   },
+  /**
+   * Returns a specific dataset, identified by the database 
+   * @param  {[type]} databaseCode [description]
+   * @param  {[type]} datasetCode  [description]
+   * @return {[type]}              [description]
+   */
   getDataset: function(databaseCode, datasetCode){
     return Datasets.findOne( {$and: [{ database_code: databaseCode },{ dataset_code: datasetCode }]} );
   },
+  /**
+   * Gets the database that has the given database code. 
+   * @param  {String} databaseCode The unique identifier
+   * @return {Database}            The database we're looking for.
+   */
   getDatabase: function(databaseCode){
-     return Datasets.findOne({database_code: datasetCode});
+     return Databases.findOne({database_code: databaseCode});
   },
+  /**
+   * Returns the database code loaded from the configuration.
+   * @return {String} The database code.
+   */
   getDatabaseCode: function(){
     return databaseCode;
   },
+  /**
+   * Returns the dataset sub-segment to be displayed in the client. 
+   * @param  {Number} offset This defines the "page" we're currently on.
+   * @return {Array}         The array of datasets to be displayed.
+   */
   getDatasetList: function(offset){
-    var datasets = Datasets.find({}, {skip: 10*offset ,limit: 10});
+    //Find the group of datasets we will use.
+    var datasets = Datasets.find({database_code: databaseCode}, {skip: 10*offset ,limit: 10});
+    //Put them in an array
     var datasetsAsArray = [];
     datasets.forEach(function (row) {
             datasetsAsArray.push(row.dataset_code);

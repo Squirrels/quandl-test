@@ -1,0 +1,63 @@
+/* Database information */
+#database-info{
+	background-color: #d9edf7;
+	width: 50%;
+    margin: 0 auto;
+    border-radius: 5px;
+    overflow: hidden;
+}
+
+#database-image{
+	float: left;
+    padding: 10px 25px 10px 10px;
+}
+
+#database-header{
+	font-size: 200%;
+    font-weight: bold;
+    padding-bottom: 20px;
+}
+#database-info p{
+	font-size: 140%;
+}
+
+
+#dataset-options{
+	background-color: #d9edf7;
+	width: 50%;
+    margin: 0 auto;
+    border-radius: 5px;
+    overflow: hidden;
+}
+
+#dataset-search{
+	padding-left: 10px;
+}
+
+#dataset-list{
+	padding-left: 10px;
+}
+
+#dataset-buttons{
+
+}
+
+#dataset-options h1{
+	padding-left: 10px;
+}
+
+#dataTable{
+
+}
+
+#dataset-data{
+	background-color: #d9edf7;
+	width: 50%;
+    margin: 0 auto;
+    border-radius: 5px;
+    overflow: hidden;
+}
+
+#dataset-info{
+	padding-left: 10px;
+}

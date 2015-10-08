@@ -35,21 +35,25 @@ Meteor.call("getDatassetListPaginationUpperLimit", function(err, response) {
 Template.body.helpers({
     data: function () {
       //Get the id of the dataset
-      var dataset = Datasets.find({dataset_code: Session.get("datasetCode")}).fetch()[0];
+      //var dataset = Datasets.find({dataset_code: Session.get("datasetCode")}).fetch()[0];
+      console.log("Getting data for "+Session.get("databaseCode") +" "+ Session.get("datasetCode") );
+      var dataset = Datasets.findOne( {$and: [{ database_code: Session.get("databaseCode") },{ dataset_code: Session.get("datasetCode") }]} );
       if(dataset != undefined && dataset._id != undefined){
-        //console.log("Gettin data for "+dataset._id);
-        //return Data.find({datasetId: dataset._id}, {skip: 10*Session.get("datasetPageOffset") ,limit: 10});
-        return Session.get("displayData")
-        //return ;
+        //Return the data to be displayed
+        console.log("Displaying data");
+        return Session.get("displayData");
       }
       else{
-        console.log("No data");
+        //Dataset does not exist
         return null;
       }
       
     },
     datasetInfo: function(){
-      var dataset = Datasets.find({dataset_code: Session.get("datasetCode")}).fetch()[0];
+      //Gets the information from the selected dataset
+      //var dataset = Datasets.findOne({dataset_code: Session.get("datasetCode")});
+      var dataset = Datasets.find({$and: [{database_code: Session.get("databaseCode")},{dataset_code: Session.get("datasetCode")}]} ).fetch()[0];//  .findOne( {$and: [{ database_code: Session.get("databaseCode") },{ dataset_code: Session.get("datasetCode") }]} )
+      //Check that it's not empty
       if(dataset != undefined){
         return dataset;
       }
@@ -58,43 +62,43 @@ Template.body.helpers({
       }
     },
     searchResult: function(){
+      //Returns the correct message when selecting a dataset based on the code
       //First check if the session variables are not empty.
       if(Session.get("datasetCode") != undefined && Session.get("datasetCode") != ""){
         //Now look for a dataset with that code
-        var dataset = Datasets.find( {$and: [{ database_code: Session.get("databaseCode") },{ dataset_code: Session.get("datasetCode") }]} );
-        if(dataset.count() != 0){
+        var dataset = Datasets.findOne( {$and: [{ database_code: Session.get("databaseCode") },{ dataset_code: Session.get("datasetCode") }]} );
+        if(dataset != undefined){
           //There is! Do we need to download the data?
-          Meteor.call("getDatasetInformation", dataset.fetch()[0], Session.get("databaseCode"), Session.get("datasetCode"));
-          return "Found dataset with code " + Session.get("datasetCode");
+          Meteor.call("getDatasetInformation", dataset, Session.get("databaseCode"), Session.get("datasetCode"));
+          return "Dataset " + Session.get("datasetCode")+" selected.";
         }
         else{
           return "Dataset "+Session.get("datasetCode")+" not found!";
         }
       }
       else{
+        //If nothing has been set, display no message
         return "";
       }
       
     },
     databaseName: function(){
+      //Sends the database code to the template
       return Session.get("databaseCode");
     },
     databaseInfo: function(){
-      return Databases.find({code: Session.get("databaseCode")}).fetch()[0];
+      //Sends the database information to the template
+      return Databases.findOne({database_code: Session.get("databaseCode")});
     },
     datasetList: function(){
+      //Sends the list of the datasets to the template
       return Session.get("datasetList");
     }
   });
 
   //Events
   Template.body.events({
-    "click .example": function () {
-      // Set the checked property to the opposite of its current value
-      Meteor.call("addExample");
-      //dataShowCode = "AAPL2";
-     // console.log("Changing dataShowCode to AAPL2");
-    },
+    //Event called when a dataset is searched using the text input
     "submit .dataset-name": function (event) {
       // Prevent default browser form submit
       event.preventDefault();
@@ -105,6 +109,7 @@ Template.body.helpers({
       //Call the method to set the dataset
       setWorkingDataset();
     },
+    //Event called when clicking on one of the dataset names
     "click .datasetLink": function(event){
       //Prevent the link from doing anything
       event.preventDefault();
@@ -113,37 +118,46 @@ Template.body.helpers({
       //Call the method to set the data
       setWorkingDataset();
     },
+    //Pagination event, when clicking the Forward button in the displayed data
     "click #data-forward": function(event){
-      console.log("Forward-Data");
-      Session.set("displayDataPageOffset", Session.get("displayDataPageOffset")+1);
-      Meteor.call("getDisplayData", Session.get('databaseCode'), Session.get('datasetCode'), Session.get("displayDataPageOffset"), function(err, response) {
-         Session.set('displayData', response);
-      });
+      //Check that it's inside the limits
+      if(Session.get("displayDataPageOffset") < Session.get("datasetListMaxPages")){
+          //Increase the counter and call the appropiate method
+          Session.set("displayDataPageOffset", Session.get("displayDataPageOffset")+1);
+          Meteor.call("getDisplayData", Session.get('databaseCode'), Session.get('datasetCode'), Session.get("displayDataPageOffset"), function(err, response) {
+             Session.set('displayData', response);
+          });
+      }
+
+      
     },
+    //Pagination event, when clicking the Back button in the displayed data
     "click #data-back": function(event){
-      console.log("Back-Data");
+      //Check that it's inside the limits
       if(Session.get("displayDataPageOffset") > 0){
+         //Decrease the counter and call the appropiate method
          Session.set("displayDataPageOffset", Session.get("displayDataPageOffset")-1);
           Meteor.call("getDisplayData", Session.get('databaseCode'), Session.get('datasetCode'), Session.get("displayDataPageOffset"), function(err, response) {
              Session.set('displayData', response);
         });
       }
-    }, 
+    },
+    //Pagination event, when clicking the Back button in the displayed data 
     "click #dataset-back": function(event){
-      /*Meteor.call("getDatasetList", function(err, response) {
-         Session.set('datasetList', response);
-      });*/
-       console.log("Dataset back");
+       //Check that it's inside the limits
       if(Session.get("datasetPageOffset") > 0){
+        //Decrease the counter and call the appropiate method
          Session.set("datasetPageOffset", Session.get("datasetPageOffset")-1);
           Meteor.call("getDatasetList", Session.get("datasetPageOffset"), function(err, response) {
              Session.set('datasetList', response);
           });
       }
     },
+    //Pagination event, when clicking the Forward button in the displayed data
     "click #dataset-forward": function(event){
-       console.log("Dataset forward");
+      //Check that it's inside the limits
        if(Session.get("datasetPageOffset") < Session.get("datasetListMaxPages")){
+        //Increase the counter and call the appropiate method
          Session.set("datasetPageOffset", Session.get("datasetPageOffset")+1);
           Meteor.call("getDatasetList", Session.get("datasetPageOffset"), function(err, response) {
              Session.set('datasetList', response);
@@ -174,9 +188,9 @@ function setWorkingDataset(){
            Session.set('displayData', response);
       });
        //And the max number of pages for the pagination
-      Meteor.call("getDisplayData", Session.get('databaseCode'), Session.get('datasetCode'), function(err, response) {
+      Meteor.call("getDisplayDataPaginationUpperLimit", Session.get('databaseCode'), Session.get('datasetCode'), function(err, response) {
            Session.set('displayDataMaxPages', response);
       });
       //Finally, we reset the page we were in the session varible displayDataPageOffset
       Session.set('displayDataPageOffset', 0);
-    }
+    };

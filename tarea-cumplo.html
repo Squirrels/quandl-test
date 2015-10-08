@@ -3,45 +3,59 @@
 </head>
 
 <body>
-  <h1>Using database: {{databaseInfo.code}}</h1>
-  <div>
-    {{databaseInfo.name}}
-    <br /> 
-    {{databaseInfo.description}}
-    <br />
-    <img src="{{databaseInfo.image}}">
-    <br />
-    {{databaseInfo.datasets}}
+  <!-- Database info -->
+  <div id="database-info">
+    <img src="{{databaseInfo.image}}" id="database-image" class="img-circle"/>
+    <div id="database-header">Using database: {{databaseInfo.database_code}}</div>
+    <p>Name: {{databaseInfo.name}}</p>
+    <p>Description: {{databaseInfo.description}}</p>
+    <p>Number of datasets: {{databaseInfo.datasets_count}}</p>
   </div>
   <hr>
-  <h1>Enter dataset name:</h1>
-  	<form class="dataset-name">
-	    <input id="dataset-input" type="text" name="text" placeholder="Search for dataset" />
-	</form>
-	{{searchResult}}
+ 
+  <div id="dataset-options">
+     <h1>Datasets:</h1>
+    <!-- Dataset search -->
+    <div id="dataset-search">
+      <div id="dataset-search-header"> <h2>Search for a dataset:</h2></div>
+      <div id="dataset-search-searchbar"></div>
+      <form class="dataset-name">
+          <input id="dataset-input" type="text" name="text" placeholder="Search for dataset" />
+      </form>
+      {{searchResult}}
+    </div>
+    <hr />
+  <!-- Dataset list -->
+    <div id="dataset-list">
+        <h2>Select dataset</h2>
+      {{#if datasetList}}
+        {{#each datasetList}}
+           {{> datasetLink}}
+        {{/each}}
+         
+      {{/if}}
+      <div id="dataset-buttons">
+          <input id="dataset-back" type="button" value="<" class="btn btn-primary" />
+          <input id="dataset-forward" type="button" value=">" class="btn btn-primary" />
+      </div>
+    </div>
 
-  <h2>Select dataset</h2>
-  {{#if datasetList}}
-    {{#each datasetList}}
-       {{> datasetLink}}
-    {{/each}}
-     
-  {{/if}}
-    <input id="dataset-back" type="button" value="<" />
-    <input id="dataset-forward" type="button" value=">" />
+  </div>
+  
+
   <hr>
-  <h1>Displaying data for :</h1>
-  <br />
   {{#if datasetInfo}}
-	  Name: {{datasetInfo.name}}
-	  <br />
-	  Desc: {{datasetInfo.description}}
+  <div id="dataset-data">
+    <div id="dataset-info">
+      <h1>Dataset: {{datasetInfo.dataset_code}}</h1>
+      <p>Name: {{datasetInfo.name}}</p>
+      <p>Desc: {{datasetInfo.description}}</p>
+    </div>
+  </div>
   {{/if}}
-  <br />
-  <!-- <input type="button" name="example" class="example" value="Type to add new tasks" list="datalist1"/> -->
   <br />
   {{#if data}}
-  <table style="width:100%" id="dataTable">
+  <table style="width:80%" id="dataTable" class="table table-striped">
   <thead>
   {{> dataTableNames}}
   </thead>
@@ -51,13 +65,10 @@
   	{{/each}}
   </tbody>
   	<!-- Buttons -->
-  	
+  	<input id="data-back" type="button" value="<" class="btn btn-primary" />
+    <input id="data-forward" type="button" value=">" class="btn btn-primary" />
 	</table>
    {{/if}}
- <form class="data-button">
-      <input id="data-back" type="button" value="<" />
-      <input id="data-forward" type="button" value=">" />
-  </form>
 </body>
 
 <template name="dataTableNames">
@@ -86,3 +97,4 @@
 <template name="datasetLink">
 <a class="datasetLink" href="{{this}}" >{{this}}</a>
 </template>
+
